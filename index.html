@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cricket Calculator - IPL Edition</title>
+  <style>
+    :root {
+      --bg: #0f2027;
+      --text: #fff;
+      --accent: #00ffd5;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      transition: 0.3s ease;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .calculator {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 25px;
+      border-radius: 20px;
+      width: 360px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      text-align: center;
+      position: relative;
+    }
+
+    .display {
+      background: rgba(0, 0, 0, 0.7);
+      color: var(--accent);
+      font-size: 2.8rem;
+      padding: 30px 15px;
+      text-align: right;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      height: 90px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+
+    button {
+      font-size: 1.5rem;
+      padding: 20px;
+      border: none;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      color: inherit;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .operator { background: #f39c12; color: #000; font-weight: bold; }
+    .equal    { background: #2ecc71; color: #fff; font-weight: bold; }
+    .clear    { background: #e74c3c; color: #fff; font-weight: bold; }
+
+    .theme-switcher {
+      margin-top: 15px;
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: 2px solid currentColor;
+      background: none;
+      cursor: pointer;
+    }
+
+    .toast {
+      position: absolute;
+      bottom: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #111;
+      color: #0ff;
+      padding: 12px 20px;
+      border-radius: 25px;
+      font-size: 1.3rem;
+      opacity: 0;
+      transition: all 0.5s ease;
+      pointer-events: none;
+      z-index: 10;
+      font-weight: bold;
+    }
+
+    .toast.show {
+      bottom: 20px;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator" id="calculator">
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+      <button class="clear" onclick="clearDisplay()">C</button>
+      <button onclick="appendValue('(')">(</button>
+      <button onclick="appendValue(')')">)</button>
+      <button class="operator" onclick="appendValue('/')">÷</button>
+      <button onclick="appendValue('7')">7</button>
+      <button onclick="appendValue('8')">8</button>
+      <button onclick="appendValue('9')">9</button>
+      <button class="operator" onclick="appendValue('*')">×</button>
+      <button onclick="appendValue('4')">4</button>
+      <button onclick="appendValue('5')">5</button>
+      <button onclick="appendValue('6')">6</button>
+      <button class="operator" onclick="appendValue('-')">−</button>
+      <button onclick="appendValue('1')">1</button>
+      <button onclick="appendValue('2')">2</button>
+      <button onclick="appendValue('3')">3</button>
+      <button class="operator" onclick="appendValue('+')">+</button>
+      <button onclick="appendValue('0')">0</button>
+      <button onclick="appendValue('.')">.</button>
+      <button class="equal" onclick="calculate()">=</button>
+    </div>
+    <br>
+    <select class="theme-switcher" onchange="setTheme(this.value)">
+      <option value="default">Default</option>
+      <option value="csk">CSK</option>
+      <option value="rcb">RCB</option>
+      <option value="mi">MI</option>
+      <option value="gt">GT</option>
+    </select>
+    <div class="toast" id="toast"></div>
+    <audio id="sound"></audio>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    const toast = document.getElementById('toast');
+    const sound = document.getElementById('sound');
+
+    const data = {
+      7:  "🥳 Thala for a reason!",
+      18: "🔥 Virat for a reason!",
+      33: "💪 Hardik hits hard!",
+      45: "🎯 Hitman Rohit!",
+      99: "👑 Sachin: God of Cricket!",
+      93: "🔥 Boom Boom Bumrah!",
+      25: "😎 Gabbar Dhawan!",
+      3:  "🌟 Raina: Mr. IPL!",
+      77: "⚡ Gill: Future is now!",
+      63: "🌌 SKY: The sky's the limit!"
+    };
+
+    const soundMap = {
+      7: 'sounds/dhoni.mp3',
+      18: 'sounds/kohli.mp3',
+      33: 'sounds/hardik.mp3',
+      45: 'sounds/rohit.mp3',
+      99: 'sounds/sachin.mp3',
+      93: 'sounds/bumrah.mp3',
+      25: 'sounds/dhawan.mp3',
+      3: 'sounds/raina.mp3',
+      77: 'sounds/gill.mp3',
+      63: 'sounds/sky.mp3'
+    };
+
+    function appendValue(val) {
+      if (display.textContent === '0' || display.textContent === 'Error') {
+        display.textContent = val;
+      } else {
+        display.textContent += val;
+      }
+    }
+
+    function clearDisplay() {
+      display.textContent = '0';
+    }
+
+    function calculate() {
+      try {
+        const result = eval(display.textContent);
+        display.textContent = result;
+        if (data[result]) {
+          showToast(data[result]);
+          playSoundFor(result);
+        }
+      } catch {
+        display.textContent = 'Error';
+      }
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    function playSoundFor(result) {
+      if (soundMap[result]) {
+        sound.src = soundMap[result];
+        sound.play().catch(e => console.log("Audio error:", e));
+      }
+    }
+
+    function setTheme(team) {
+      const root = document.documentElement;
+      switch (team) {
+        case 'csk':
+          root.style.setProperty('--bg', '#f9d71c');
+          root.style.setProperty('--text', '#000');
+          root.style.setProperty('--accent', '#001F54');
+          break;
+        case 'rcb':
+          root.style.setProperty('--bg', '#da1818');
+          root.style.setProperty('--text', '#fff');
+          root.style.setProperty('--accent', '#ffd700');
+          break;
+        case 'mi':
+          root.style.setProperty('--bg', '#0455bf');
+          root.style.setProperty('--text', '#fff');
+          root.style.setProperty('--accent', '#f8c291');
+          break;
+        case 'gt':
+          root.style.setProperty('--bg', '#001C30');
+          root.style.setProperty('--text', '#00fff7');
+          root.style.setProperty('--accent', '#0ef');
+          break;
+        default:
+          root.style.setProperty('--bg', '#0f2027');
+          root.style.setProperty('--text', '#fff');
+          root.style.setProperty('--accent', '#00ffd5');
+      }
+    }
+  </script>
+</body>
+</html>
